@@ -80,13 +80,14 @@ def kmeans(X, k):
 
 class RBFNet(object):
     """Implementation of a Radial Basis Function Network"""
-    def __init__(self, k=2, lr=0.01, epochs=100, rbf=rbf, ifKmeans=False, withBias=True):
+    def __init__(self, k=2, lr=0.01, epochs=100, rbf=rbf, ifKmeans=False, withBias=True, beta=0.0):
         self.k = k
         self.lr = lr
         self.epochs = epochs
         self.rbf = rbf
         self.ifKmeans = ifKmeans
         self.withBias = withBias
+        self.beta = beta
 
         self.w = np.random.randn(k)
         if self.withBias:
@@ -107,6 +108,8 @@ class RBFNet(object):
         for dMax in dMaxArray:
             self.sigmas.append(dMax / np.sqrt(2*self.k))
 
+        previous_delta = 0
+
         # online training
         for epoch in range(self.epochs):
             X, y = sklearn.utils.shuffle(X, y)
@@ -122,9 +125,13 @@ class RBFNet(object):
                 error = -(y[i] - y_out)
 
                 # online update
-                self.w = self.w - self.lr * a * error
+                delta = -self.lr * error
+                self.w = self.w + delta * a + self.beta * previous_delta
+                
                 if self.withBias:
-                    self.b = self.b - self.lr * error
+                    self.b = self.b - self.lr * error + self.beta * previous_delta
+
+                previous_delta = delta
 
                 # TODO: back propagation for hidden layer
                 # error1 = [error * w for w in self.w]
@@ -157,7 +164,7 @@ else:
     print("Choice not available")
     sys.exit(0)
 
-rbfnet = RBFNet(lr=1e-2, k=20, ifKmeans=useKmeans, withBias=True)
+rbfnet = RBFNet(lr=1e-2, k=20, ifKmeans=useKmeans, withBias=True, beta=0.2)
 rbfnet.fit(X1, y1)
 y_pred = rbfnet.predict(X)
 
