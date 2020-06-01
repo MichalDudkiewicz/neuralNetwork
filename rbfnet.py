@@ -153,8 +153,14 @@ choice = input("Please choose one of the options from above")
 
 useKmeans = False
 if choice == "1":
-    X1, y1 = read_data("approximation_train_1.txt")
-    # X1, y1 = read_data("approximation_train_2.txt")
+    trainSetChoice = input("Please choose train set between 1 and 2...")
+    if trainSetChoice == "1":
+        X1, y1 = read_data("approximation_train_1.txt")
+    elif trainSetChoice == "2":
+        X1, y1 = read_data("approximation_train_2.txt")
+    else:
+        print("Choice not available")
+        sys.exit(0)
     X, y = read_data("approximation_test.txt")
 elif choice == "2":
     X1, y1 = read_data("classification_train.txt")
@@ -164,7 +170,8 @@ else:
     print("Choice not available")
     sys.exit(0)
 
-rbfnet = RBFNet(lr=1e-2, k=20, ifKmeans=useKmeans, withBias=True, beta=0.2)
+# number of neurons/centers k must be smaller than test data size 
+rbfnet = RBFNet(lr=1e-2, k=12, ifKmeans=useKmeans, withBias=True, beta=0.2)
 rbfnet.fit(X1, y1)
 y_pred = rbfnet.predict(X)
 
