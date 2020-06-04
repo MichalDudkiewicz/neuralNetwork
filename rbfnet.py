@@ -275,6 +275,14 @@ else:
         name = "classification_" + str(neorons) + "_neurons_MSE"
         plt.savefig("data/" + name + ".png")
         plt.clf()
+        print("Precision/recall " + str(neorons) + " neurons:")
+        y_class = rbfnet.predict(X)
+        y_class = [int(np.round(num[0])) for num in y_class]
+        y = [int(num) for num in y]
+        precision_recall = [[0] * 3, [0] * 3, [0] * 3]
+        for i in range(len(y)):
+            precision_recall[y[i] - 1][y_class[i] - 1] = precision_recall[y[i] - 1][y_class[i] - 1] + 1
+        print(precision_recall)
     for momentum in momentum_factors:
         rbfnet = RBFNet(lr=1e-2, k=10, ifKmeans=useKmeans, withBias=True, beta=momentum)
         rbfnet.fit(X1, y1)
@@ -292,6 +300,14 @@ else:
         name = "classification_" + str(momentum) + "_momentum_MSE"
         plt.savefig("data/" + name + ".png")
         plt.clf()
+        print("Precision/recall " + str(momentum) + " momentum:")
+        y_class = rbfnet.predict(X)
+        y_class = [int(np.round(num[0])) for num in y_class]
+        y = [int(num) for num in y]
+        precision_recall = [[0] * 3, [0] * 3, [0] * 3]
+        for i in range(len(y)):
+            precision_recall[y[i] - 1][y_class[i] - 1] = precision_recall[y[i] - 1][y_class[i] - 1] + 1
+        print(precision_recall)
     for lr in learning_rates:
         rbfnet = RBFNet(lr=lr, k=10, ifKmeans=useKmeans, withBias=True, beta=0.2)
         rbfnet.fit(X1, y1)
@@ -309,6 +325,15 @@ else:
         name = "classification_" + str(lr) + "_lr_MSE"
         plt.savefig("data/" + name + ".png")
         plt.clf()
+        print("Precision/recall " + str(lr) + " learning rate:")
+        y_class = rbfnet.predict(X)
+        y_class = [int(np.round(num[0])) for num in y_class]
+        y = [int(num) for num in y]
+        precision_recall = [[0] * 3, [0] * 3, [0] * 3]
+        for i in range(len(y)):
+            precision_recall[y[i] - 1][y_class[i] - 1] = precision_recall[y[i] - 1][y_class[i] - 1] + 1
+        print(precision_recall)
+
 
 
 
