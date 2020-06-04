@@ -88,6 +88,8 @@ class RBFNet(object):
         self.ifKmeans = ifKmeans
         self.withBias = withBias
         self.beta = beta
+        self.errors = []
+        self.accuracies = []
 
         self.w = np.random.randn(k)
         if self.withBias:
@@ -108,11 +110,11 @@ class RBFNet(object):
         for dMax in dMaxArray:
             self.sigmas.append(dMax / np.sqrt(2*self.k))
 
-        previous_delta = 0
-
         # online training
         for epoch in range(self.epochs):
+            previous_delta = 0
             X, y = sklearn.utils.shuffle(X, y)
+            y_outs = []
             for i in range(len(X)):
                 # forward pass
                 a = np.array([self.rbf(X[i], c, s) for c, s, in zip(self.centers, self.sigmas)])
@@ -120,6 +122,8 @@ class RBFNet(object):
 
                 # loss = (y[i] - y_out) ** 2
                 # print('Loss: {0:.2f}'.format(loss[0]))
+
+                y_outs.append(y_out)
 
                 # backward pass
                 error = -(y[i] - y_out)
@@ -133,10 +137,20 @@ class RBFNet(object):
 
                 previous_delta = delta
 
+
+
                 # TODO: back propagation for hidden layer
                 # error1 = [error * w for w in self.w]
                 # error1_sigma = np.multiply([derivative_gauss_sigma(x, c, s) for x, c, s, in zip(a, self.centers, self.sigmas)], error1)
                 # error1_center = np.multiply([derivative_gauss_center(x, c, s) for x, c, s, in zip(a, self.centers, self.sigmas)], error1)
+
+            self.errors.append(mean_squared_error(y, y_outs))
+            y_rounded_outs = [np.round(num) for num in y_outs]
+            n_differents = 0
+            for i in range(len(y)):
+                if y[i] != y_rounded_outs[i]:
+                    n_differents += 1
+            self.accuracies.append((len(y) - n_differents) / len(y))
 
     def predict(self, X):
         y_pred = []
@@ -145,6 +159,12 @@ class RBFNet(object):
             y_out = a.T.dot(self.w) + self.b
             y_pred.append(y_out)
         return np.array(y_pred)
+
+    def getErrors(self):
+        return self.errors
+
+    def getAccuracies(self):
+        return self.accuracies
 
 
 print("[1] Approximation\n[2] Classification")
@@ -170,25 +190,125 @@ else:
     print("Choice not available")
     sys.exit(0)
 
-# number of neurons/centers k must be smaller than test data size 
-rbfnet = RBFNet(lr=1e-2, k=12, ifKmeans=useKmeans, withBias=True, beta=0.2)
-rbfnet.fit(X1, y1)
-y_pred = rbfnet.predict(X)
+number_of_neurons = [2, 8, 20]
+momentum_factors = [0.1, 0.2, 0.5, 0.8]
+learning_rates = [0.01, 0.05, 0.1, 0.3]
+
+# number of neurons/centers k must be smaller than test data size
 
 if choice == "1":
-    plt.plot(X, y, '-o', label='true data')
-    plt.plot(X, y_pred, '-o', label='RBFNN prediction')
-    plt.legend()
-    print("Mean squared error is " + str(mean_squared_error(y, y_pred)))
-    plt.tight_layout()
-    plt.show()
+    for neorons in number_of_neurons:
+        rbfnet = RBFNet(lr=1e-2, k=neorons, ifKmeans=useKmeans, withBias=True, beta=0.2)
+        rbfnet.fit(X1, y1)
+        y_pred = rbfnet.predict(X)
+        plt.plot(X, y, '-,', label='true data')
+        plt.plot(X, y_pred, '-,', label='RBFNN prediction')
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.tight_layout()
+        name = "aproximation_" + str(neorons) + "_neurons"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+        plt.plot(range(100), rbfnet.getErrors(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('MSE')
+        plt.tight_layout()
+        name = "aproximation_" + str(neorons) + "_neurons_MSE"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+    for momentum in momentum_factors:
+        rbfnet = RBFNet(lr=1e-2, k=10, ifKmeans=useKmeans, withBias=True, beta=momentum)
+        rbfnet.fit(X1, y1)
+        y_pred = rbfnet.predict(X)
+        plt.plot(X, y, '-,', label='true data')
+        plt.plot(X, y_pred, '-,', label='RBFNN prediction')
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.tight_layout()
+        name = "aproximation_" + str(momentum) + "_momentum"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+        plt.plot(range(100), rbfnet.getErrors(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('MSE')
+        plt.tight_layout()
+        name = "aproximation_" + str(momentum) + "_momentum_MSE"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+    for lr in learning_rates:
+        rbfnet = RBFNet(lr=lr, k=10, ifKmeans=useKmeans, withBias=True, beta=0.2)
+        rbfnet.fit(X1, y1)
+        y_pred = rbfnet.predict(X)
+        plt.plot(X, y, '-,', label='true data')
+        plt.plot(X, y_pred, '-,', label='RBFNN prediction')
+        plt.legend()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.tight_layout()
+        name = "aproximation_" + str(lr) + "_lr"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+        plt.plot(range(100), rbfnet.getErrors(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('MSE')
+        plt.tight_layout()
+        name = "aproximation_" + str(lr) + "_lr_MSE"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
 else:
-    y_pred = [np.round(num) for num in y_pred]
-    n_differents = 0
-    for i in range(len(y)):
-        if y[i] != y_pred[i]:
-            n_differents += 1
-    print("Accuracy is " + str((len(y) - n_differents)/len(y)) + "[%]")
+    for neorons in number_of_neurons:
+        rbfnet = RBFNet(lr=1e-2, k=neorons, ifKmeans=useKmeans, withBias=True, beta=0.2)
+        rbfnet.fit(X1, y1)
+        plt.plot(range(100), rbfnet.getAccuracies(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('accuracy')
+        plt.tight_layout()
+        name = "classification_" + str(neorons) + "_neurons_accuracy"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+        plt.plot(range(100), rbfnet.getErrors(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('MSE')
+        plt.tight_layout()
+        name = "classification_" + str(neorons) + "_neurons_MSE"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+    for momentum in momentum_factors:
+        rbfnet = RBFNet(lr=1e-2, k=10, ifKmeans=useKmeans, withBias=True, beta=momentum)
+        rbfnet.fit(X1, y1)
+        plt.plot(range(100), rbfnet.getAccuracies(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('accuracy')
+        plt.tight_layout()
+        name = "classification_" + str(momentum) + "_momentum_accuracy"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+        plt.plot(range(100), rbfnet.getErrors(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('MSE')
+        plt.tight_layout()
+        name = "classification_" + str(momentum) + "_momentum_MSE"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+    for lr in learning_rates:
+        rbfnet = RBFNet(lr=lr, k=10, ifKmeans=useKmeans, withBias=True, beta=0.2)
+        rbfnet.fit(X1, y1)
+        plt.plot(range(100), rbfnet.getAccuracies(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('accuracy')
+        plt.tight_layout()
+        name = "classification_" + str(lr) + "_lr_accuracy"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
+        plt.plot(range(100), rbfnet.getErrors(), '-,')
+        plt.xlabel('epochs')
+        plt.ylabel('MSE')
+        plt.tight_layout()
+        name = "classification_" + str(lr) + "_lr_MSE"
+        plt.savefig("data/" + name + ".png")
+        plt.clf()
 
 
 
